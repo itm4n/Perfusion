@@ -56,6 +56,14 @@ C:\Users\Lab-User\Desktop\workspace>Perfusion.exe -c cmd -i
 C:\Temp>
 ```
 
+## Build instructions
+
+This solution is composed of two projects that need to be compiled in a specific order. Everything is pre-configured, so you just have to follow these simple instructions:
+
+1. Open the Solution with Visual Studio 2019
+2. Select `Release / x64`
+3. `Build > Build Solution`
+
 ## Usage
 
 You can check the help message using the `-h` option.
@@ -92,3 +100,15 @@ As far as I know, this vulnerability will not be fixed by Microsoft, for some re
 
 - `HKLM\SYSTEM\CurrentControlSet\Services\RpcEptMapper`
 - `HKLM\SYSTEM\CurrentControlSet\Services\DnsCache`
+
+## How does this exploit work?
+
+Below are the exploit steps that are implemented in this tool:
+
+1. A Process is created in the background in a suspended state (using the specified command line).
+2. The embedded payload DLL is written to the current user's `Temp` folder.
+3. A `Performance` key is created under `HKLM\SYSTEM\CurrentControlSet\Services\RpcEptMapper` and is populated with the appropriate values, including the full path of the DLL that was created at step 2.
+4. The WMI class `Win32_Perf` is created and invoked to trigger the collection of _Windows Performance Counters_.
+5. The DLL is loaded by the WMI service either as `NT AUTHORITY\SYSTEM` or `NT AUTHORITY\LOCAL SERVICE`.
+6. If the DLL is loaded by `NT AUTHORITY\SYSTEM`, its Token is duplicated and is applied to the Process that was initially created by the user at step 1.
+7. Everything is cleaned up and the main Thread of the suspended Process is resumed.
