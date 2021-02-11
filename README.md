@@ -1,6 +1,6 @@
 # Perfusion
 
-On __Windows 7__, __Windows Server 2008R2__, __Windows 8__, and __Windows Server 2012__, the registry key of the `RpcEptMapper` and `DnsCache` (7/2008R2 only) services is configured with weak permissions. Any local user can create a `Performance` subkey and then leverage the ___Windows Performance Counters___ to load an arbitrary DLL in the context of the WMI service as `NT AUTHORITY\SYSTEM`.
+On __Windows 7__, __Windows Server 2008R2__, __Windows 8__, and __Windows Server 2012__, the registry key of the `RpcEptMapper` and `DnsCache` (7/2008R2 only) services is configured with weak permissions. Any local user can create a `Performance` subkey and then leverage the ___Windows Performance Counters___ to load an arbitrary DLL in the context of the WMI service as `NT AUTHORITY\SYSTEM` (hence the tool's name).
 
 This tool is intended to help security consultants during penetration tests. This software is provided as is, and I will probably not provide any support. Though, I tested it thoroughly on three different virtual machines so there should not be any significant issue.
 
