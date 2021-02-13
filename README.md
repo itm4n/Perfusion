@@ -91,8 +91,8 @@ The following versions of Windows are vulnerable:
 
 | Windows version | Vulnerable registry keys |
 | --- | --- |
-| Windows 7 | RpcEptMapper, DncCache |
-| Windows Server 2008R2 | RpcEptMapper, DncCache |
+| Windows 7 | RpcEptMapper, DnsCache |
+| Windows Server 2008R2 | RpcEptMapper, DnsCache |
 | Windows 8 | RpcEptMapper |
 | Windows Server 2012 | RpcEptMapper |
 
