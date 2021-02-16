@@ -103,7 +103,7 @@ As far as I know, this vulnerability will not be fixed by Microsoft, for some re
 
 I created a patch for this vulnerability in the form of a PowerShell script: [RegistryPatch.ps1](RegistryPatch.ps1). This script removes the `CreateSubKey` right on the two above-mentioned registry keys for the following identities: `NT AUTHORITY\INTERACTIVE`, `BUILTIN\Users` and/or `BUILTIN\Authenticated Users`.
 
-- __Check if a machine is vulnerable:__
+- __Check if a machine is vulnerable:__ (Windows Server 2012 here)
 
 ```console
 PS C:\Temp> . .\RegistryPatch.ps1; Invoke-RegistryPatch -Verbose
@@ -118,7 +118,7 @@ VERBOSE: IsInherited: False
 True
 ```
 
-- __Apply the patch:__
+- __Apply the patch:__ (Windows Server 2008 R2 here)
 
 ```console
 PS C:\Temp> . .\RegistryPatch.ps1; Invoke-RegistryPatch -Patch -Verbose 
