@@ -85,7 +85,7 @@ Options:
   -h        Help - That's me :)
 ```
 
-## Remediation
+## Remediation / Patch
 
 The following versions of Windows are vulnerable:
 
@@ -100,6 +100,51 @@ As far as I know, this vulnerability will not be fixed by Microsoft, for some re
 
 - `HKLM\SYSTEM\CurrentControlSet\Services\RpcEptMapper`
 - `HKLM\SYSTEM\CurrentControlSet\Services\DnsCache`
+
+I created a patch for this vulnerability in the form of a PowerShell script: [RegistryPatch.ps1](RegistryPatch.ps1). This script removes the `CreateSubKey` right on the two above-mentioned registry keys for the following identities: `NT AUTHORITY\INTERACTIVE`, `BUILTIN\Users` and/or `BUILTIN\Authenticated Users`.
+
+- __Check if a machine is vulnerable:__
+
+```console
+PS C:\Temp> . .\RegistryPatch.ps1; Invoke-RegistryPatch -Verbose
+VERBOSE: Registry key: HKLM\SYSTEM\CurrentControlSet\Services\RpcEptMapper
+VERBOSE: Found a vulnerable ACE: "NT AUTHORITY\Authenticated Users" has "QueryValues, CreateSubKey, ReadPermissions" rights
+VERBOSE: InheritanceFlags: None
+VERBOSE: IsInherited: False
+VERBOSE: Registry key: HKLM\SYSTEM\CurrentControlSet\Services\RpcEptMapper
+VERBOSE: Found a vulnerable ACE: "BUILTIN\Users" has "QueryValues, CreateSubKey, Notify" rights
+VERBOSE: InheritanceFlags: None
+VERBOSE: IsInherited: False
+True
+```
+
+- __Apply the patch:__
+
+```console
+PS C:\Temp> . .\RegistryPatch.ps1; Invoke-RegistryPatch -Patch -Verbose 
+VERBOSE: Registry key: HKLM\SYSTEM\CurrentControlSet\Services\RpcEptMapper
+VERBOSE: Found a vulnerable ACE: "NT AUTHORITY\Authenticated Users" has "QueryValues, CreateSubKey, ReadPermissions" rights
+VERBOSE: InheritanceFlags: None
+VERBOSE: IsInherited: False
+VERBOSE: Registry key: HKLM\SYSTEM\CurrentControlSet\Services\RpcEptMapper
+VERBOSE: Found a vulnerable ACE: "BUILTIN\Users" has "QueryValues, CreateSubKey, Notify" rights
+VERBOSE: InheritanceFlags: None
+VERBOSE: IsInherited: False
+VERBOSE: Registry key: HKLM\SYSTEM\CurrentControlSet\Services\RpcEptMapper
+VERBOSE: The new ACL was applied
+VERBOSE: Registry key: HKLM\SYSTEM\CurrentControlSet\Services\DnsCache
+VERBOSE: Found a vulnerable ACE: "NT AUTHORITY\INTERACTIVE" has "QueryValues, CreateSubKey, EnumerateSubKeys, ReadPermissions" rights
+VERBOSE: InheritanceFlags: None
+VERBOSE: IsInherited: False
+VERBOSE: Registry key: HKLM\SYSTEM\CurrentControlSet\Services\DnsCache
+VERBOSE: Found a vulnerable ACE: "BUILTIN\Users" has "CreateSubKey, ReadKey" rights
+VERBOSE: InheritanceFlags: None
+VERBOSE: IsInherited: False
+VERBOSE: Registry key: HKLM\SYSTEM\CurrentControlSet\Services\DnsCache
+VERBOSE: The new ACL was applied
+True
+```
+
 
 ## How does this exploit work?
 
