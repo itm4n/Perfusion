@@ -689,6 +689,8 @@ BOOL CheckRequirements()
         wprintf(L"[-] Please use the 64-bit version instead.\n");
         return FALSE;
     }
+
+    return TRUE;
 #endif
 
     wprintf(L"[-] This system architecture is not supported.\n");
