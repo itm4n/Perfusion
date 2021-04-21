@@ -10,6 +10,10 @@ For more information: [https://itm4n.github.io/windows-registry-rpceptmapper-eop
   <img src="demo.gif">
 </p>
 
+## :information_source: 2021-04-21 Update
+
+According to [0patch](https://twitter.com/0patch/status/1384495698373120002), this vulnerability was partially fixed with the April 2021 Windows Update (ESU). This means that machines running an updated version of Windows 8 / Server 2012 should no longer be exploitable. However Windows 7 / Server 2008 R2 remains vulnerable. You just have to leverage the `Dnscache` registry key rather than `RpcEptMapper`. I updated the PoC so that you can manually specify it with the `-k` option.
+
 ## Known issues
 
 :warning: __READ THIS BEFORE USING THIS TOOL__ :warning:
@@ -72,7 +76,7 @@ You can check the help message using the `-h` option.
 C:\TOOLS>Perfusion.exe -h
  _____         ___         _
 |  _  |___ ___|  _|_ _ ___|_|___ ___
-|   __| -_|  _|  _| | |_ -| | . |   |  version 0.1
+|   __| -_|  _|  _| | |_ -| | . |   |  version 0.2
 |__|  |___|_| |_| |___|___|_|___|_|_|  by @itm4n
 
 Description:
@@ -82,6 +86,7 @@ Options:
   -c <CMD>  Command - Execute the specified command line
   -i        Interactive - Interact with the process (default: non-interactive)
   -d        Desktop - Spawn a new process on your desktop (default: hidden)
+  -k <KEY>  Key - Either 'RpcEptMapper' or 'Dnscache' (default: 'RpcEptMapper')
   -h        Help - That's me :)
 ```
 
@@ -144,7 +149,6 @@ VERBOSE: Registry key: HKLM\SYSTEM\CurrentControlSet\Services\DnsCache
 VERBOSE: The new ACL was applied
 True
 ```
-
 
 ## How does this exploit work?
 
